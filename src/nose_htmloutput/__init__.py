@@ -94,6 +94,7 @@ class HtmlOutput(Plugin):
             help="Path to html file to store the report in. "
                  "Default is nosetests.html in the working directory "
                  "[NOSE_HTML_FILE]")
+               
 
     def configure(self, options, config):
         """Configures the xunit plugin."""
@@ -107,7 +108,8 @@ class HtmlOutput(Plugin):
             )
             self.stats = {'errors': 0, 'failures': 0, 'passes': 0, 'skipped': 0}
             self.report_data = defaultdict(Group)
-            self.report_file = codecs.open(options.html_file, 'w', self.encoding, 'replace')
+            self.report_file = codecs.open(options.html_file, 'w', self.encoding, 'replace')            
+            self.report_type = os.path.splitext(options.html_file)[1][1:]
 
     def report(self, stream):
         """Writes an Xunit-formatted XML file
@@ -117,8 +119,8 @@ class HtmlOutput(Plugin):
         """
         self.stats['total'] = sum(self.stats.values())
         for group in self.report_data.values():
-            group.stats['total'] = sum(group.stats.values())
-        self.report_file.write(self.jinja.get_template('report.html').render(
+            group.stats['total'] = sum(group.stats.values())            
+        self.report_file.write(self.jinja.get_template('report.{0}'.format(self.report_type)).render(
             report=self.report_data,
             stats=self.stats,
         ))
@@ -135,6 +137,7 @@ class HtmlOutput(Plugin):
         group.tests.append({
             'name': name[-1],
             'failed': False,
+            'status':'Sucess'
         })
 
     def addError(self, test, err, capt=None):
@@ -159,6 +162,7 @@ class HtmlOutput(Plugin):
         group.tests.append({
             'name': name[-1],
             'failed': True,
+            'status': 'Skipped'if (type == 'skipped') else 'Failed',
             'type': type,
             'errtype': nice_classname(err[0]),
             'message': exc_message(err),
